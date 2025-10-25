@@ -6,15 +6,17 @@ from pathlib import Path
 from fsc.config import ConfigManager
 from .realtime_command_executor import execute_system_command_realtime 
 from .images_utils import to_llm_message_content
+from .document_utils import read_document
+
 logger = logging.getLogger(__name__)
+
+
 
 
 def download_file_via_http(url: str, timeout: int = 10) -> str:
     """Download a file from a URL and return its content as a string."""
-    try:
-        response = httpx.get(url, timeout=timeout)
-        response.raise_for_status()
-        return response.text
+    try:        
+        return read_document(url)
     except Exception as e:
         return f"Failed to download file from {url}: {e!r}"
 
@@ -64,12 +66,15 @@ def save_file_to_disk(path: str, content: str) -> str:
 
 
 def load_file_from_disk(path: str) -> str:
-    """Load and return the text contents of the file at PATH."""
+    """Load and return the text contents of the file at PATH."""       
     try:
         p = Path(path).expanduser().absolute()
         if not p.exists():
             return f"File not found: {p}"
         # Basic guard against very large files in CLI
+        if path.suffix in [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp", ".pdf", ".mp4", ".mp3", ".avi", ".mov", ".mkv", ".docx", ".xlsx", ".pptx"]:
+            return read_document(p)
+        
         if p.stat().st_size > 5 * 1024 * 1024:
             return f"File too large to display (>5MB): {p}"
         data = p.read_text(encoding="utf-8", errors="ignore")
@@ -86,7 +91,8 @@ def list_available_models() -> str:
         return "No LLM models configured."
     return "\n".join(available_models)
 
-BUILTIN_TOOLS = [get_project_root_dir, 
+BUILTIN_TOOLS = [read_document,
+                 get_project_root_dir, 
                  run_shell_command, 
                  load_image_files, 
                  list_file_in_current_project, 
