@@ -153,8 +153,8 @@ class AiCodingAssistantShell:
         if command_lower in ['exit', 'quit', 'q', "bye"]:
             self.console.print("[bold red]Goodbye![/bold red]")
             return False
-            
-        if command_lower == 'clear':            
+
+        if command_lower in ['clear', 'help']:
             os.system('clear' if os.name == 'posix' else 'cls')
             self.display_welcome()
             return True                
