@@ -3,6 +3,7 @@ import json
 from typing import Any, Dict, List, Optional, Callable, Tuple
 import logging
 import openai
+import httpx
 from openai import RateLimitError
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
@@ -24,9 +25,11 @@ class BuiltinToolsLLMClient:
         openai_client: openai.OpenAI = None,
         model: str = "qwen3-30b-a3b",
         stream_handler: Optional[Callable] = None,
-        debug: bool = False,        
+        debug: bool = False,  
+        timeout=180,      
     ):
-        self.client = openai_client or openai.OpenAI(api_key=api_key, base_url=base_url)
+        http_timeout = httpx.Timeout(timeout/3, connect=timeout/3, read=timeout)
+        self.client = openai_client or openai.OpenAI(api_key=api_key, base_url=base_url, timeout=http_timeout)
         self.model = model
         
         self.stream_handler = stream_handler
