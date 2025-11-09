@@ -94,7 +94,7 @@ def cli():
     """
     # Only show banner for interactive commands
     if should_show_banner():
-        from .banner import render_assistant_banner
+        from .welcome import render_assistant_banner
 
         render_assistant_banner()
 
