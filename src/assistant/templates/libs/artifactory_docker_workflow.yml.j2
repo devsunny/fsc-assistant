@@ -1,0 +1,48 @@
+name: PROJECT_NAME Docker CICD
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - main
+    - master
+    - uat
+    - develop
+    - qa
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-environment:
+    runs-on: github-runner-infra
+    outputs:
+      environment: ${{ steps.check.outputs.environment }}
+    steps:
+      - name: Check environment
+        id: check
+        env:
+          BRANCH: ${{ github.event_name == 'workflow_dispatch' && inputs.selected_branch || github.ref_name }}
+        run: |
+          if [[ "$BRANCH" == "main" || "$BRANCH" == "master" ]]; then
+            ENVIRONMENT="prod"
+          elif [[ "$BRANCH" == "uat" ]]; then
+            ENVIRONMENT="uat"
+          elif [[ "$BRANCH" == "qa" ]]; then
+            ENVIRONMENT="qa"
+          elif [[ "$BRANCH" == "develop" ]]; then
+            ENVIRONMENT="dev"
+          else
+            ENVIRONMENT="dev"
+          fi
+      
+          echo "environment=$ENVIRONMENT" >> "$GITHUB_OUTPUT"
+          
+  deploy:
+    needs: check-environment
+    if: needs.check-environment.outputs.environment != ''
+    uses: kkr-infra/atlas-infra-cicd/.github/workflows/build-deploy-eks.yml@main
+    with:
+      environment: ${{ needs.check-environment.outputs.environment }}
+      deploy: true

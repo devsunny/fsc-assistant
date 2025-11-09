@@ -1,10 +1,9 @@
 from pathlib import Path
 from typing import Literal, Optional
-from prompt_toolkit import PromptSession
-from prompt_toolkit.history import FileHistory
-from prompt_toolkit import HTML
+
+from prompt_toolkit import HTML, PromptSession
 from prompt_toolkit import print_formatted_text as console_print
-from ..config import ConfigManager
+from prompt_toolkit.history import FileHistory
 
 COLORS = [
     "ansiblack",
@@ -26,10 +25,9 @@ COLORS = [
 ]
 
 
-class PromptConsole:
+class CLIConsole:
     def __init__(self):
-        config_dir = ConfigManager.get_global_config_path().parent
-        assistant_hist = config_dir / ".console_prompt_history"
+        assistant_hist = Path.home() / ".assistant/.kara_prompt_history"
         if assistant_hist.exists() is False:
             assistant_hist.parent.mkdir(exist_ok=True)
             assistant_hist.write_text("")

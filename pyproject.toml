@@ -30,6 +30,9 @@ dependencies = [
     "tenacity>=9.1.2",
     "tomlkit>=0.13.3",
     "certifi>=2025.10.5",
+    "pygithub>=2.8.1",
+    "jira>=3.10.5",
+    "fastmcp>=2.13.0.2",
 ]
 
 

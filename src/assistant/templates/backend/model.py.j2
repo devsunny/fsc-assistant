@@ -1,0 +1,30 @@
+from __future__ import annotations
+{% if is_postgres %}import sqlalchemy.dialects.postgresql
+{% endif %}
+from ..database import db
+{% for fk in child_relationships %}
+from .{{ fk.table_name | to_singular_snake_case }}  import {{ fk.table_name | to_singular_pascal_case }}
+{% endfor %}
+
+class {{ table_singular_pascal_name }}(db.Model):
+    __tablename__ = "{{ table.name }}"
+    {% if has_table_args %}
+    __table_args__ = ({% for fk in composite_fks %}{{ utils.to_composite_fk_str(fk) }},           
+                      {% endfor %}    
+                      
+                        {% if table.schema %}{'schema': '{{ table.schema }}',}
+                      {% endif %}
+                      )
+    {% endif %}
+
+    {% for column in columns %}
+    {{column.name | snake_case}} = db.Column({{column | sqlalchemy_type}}{% if column.foreign_key_ref %}, db.ForeignKey('{{column.foreign_key_ref[1]}}.{{column.foreign_key_ref[2]}}'){% endif %}{% if not column.nullable  %}, nullable=False {% endif %}{% if column.is_primary %}, primary_key=True{% endif %})
+    {% endfor %}
+
+    {% for fk in child_relationships %}
+    {{fk.table_name | to_plural_snake_case}} = db.relationship('{{ fk.table_name | to_singular_pascal_case }}', backref='{{ table_singular_snakecase_name }}', lazy=True)
+    {% endfor %}  
+    
+
+    def __repr__(self):
+        return f"<{{ table_singular_pascal_name }}({{ utils.get_pk_names_for_repr(table) }})>"

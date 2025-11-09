@@ -1,0 +1,32 @@
+
+import os
+from flask_sqlalchemy import SQLAlchemy
+
+from atlas_web.atlas_web_app import AtlasWepApp
+
+tenant_api_id = os.getenv("TENANT_APP_ID")
+atlas_web_app=AtlasWepApp(app_id=tenant_api_id, 
+                          app_context="/{{kebab_case_project_name}}", 
+                          static_folder="static", 
+                          static_url_path="/{{kebab_case_project_name}}/ui/")
+
+app = atlas_web_app.init_app()
+
+api=atlas_web_app.enable_restx(title="{{capital_project_name}} API",
+                              description="{{capital_project_name}} API",
+                              enable_web_global_resources=True
+                              )
+atlas_web_app.enable_sqlalchemy()
+sqlalchmey_db = SQLAlchemy(app)
+atlas_config=atlas_web_app.atlas_config
+catalog_schema = app.config["catalog_schema"]
+
+def get_catalog_connection():
+    conn = atlas_web_app.metadb_client.get_connection()
+    try:
+        conn.autocommit(False)
+        yield conn
+        conn.commit()
+    except Exception as dbex:
+        conn.rollback()
+        atlas_web_app.logger.exception(dbex)

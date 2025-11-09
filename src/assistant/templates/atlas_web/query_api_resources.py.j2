@@ -1,0 +1,61 @@
+from __future__ import annotations
+import logging
+from typing import List
+from flask_restx import fields, Namespace
+from pydantic import ValidationError
+from atlas_web import PublicResource, RestResponse, SecuredResource
+from ..schemas.{{table_singular_snakecase_name}} import {{ table_singular_pascal_name }} 
+from ..dao.{{table_singular_snakecase_name}} import {{ table_singular_pascal_name }}MetaClient
+from ..app_session import atlas_web_app
+
+
+# --- Flask-RESTX API Models (for documentation) ---
+# The model defines the structure for the API documentation (Swagger UI)
+
+logger = logging.getLogger(__name__)
+
+# Namespace for {{table.name}}
+ns_{{table_plural_snakecase_name}} = Namespace('{{table_plural_snakecase_name}}', path="/{{table_kebab_case_name}}", description='{{ table_singular_pascal_name }} operations')
+
+
+
+
+{{table_singular_snakecase_name}}_model = ns_{{table_plural_snakecase_name}}.model('{{table_singular_pascal_name}}', {
+    {% for column in columns %}
+    '{{column.name | snake_case}}' : {{ column | get_flask_restx_type}}({{ column | to_flask_restx_field_attrs}}){% if not loop.last %},
+    {% endif %}
+    {% endfor %}
+})
+
+
+{{table_plural_snakecase_name}}_resp_model = ns_{{table_plural_snakecase_name}}.model('{{table_plural_pascal_name}}Reponse', {
+    'code': fields.Integer(
+        required=True,
+        default = 200,
+        description='status code of the request'
+    ),
+    'err': fields.String(        
+        description='error message if error every happened'
+    ),
+    'msg': fields.String(        
+        description='server side message for client to display'
+    ),
+    "data": fields.List(fields.Nested({{table_singular_snakecase_name}}_model, required=False, help="If err presents, this field could be None"))
+})
+
+
+
+# --- API Endpoints ---
+@ns_{{table_plural_snakecase_name}}.route('/')
+class {{table_singular_pascal_name}}List(SecuredResource):
+    @ns_{{table_plural_snakecase_name}}.doc('list_{{table_plural_snakecase_name}}')
+    @ns_{{table_plural_snakecase_name}}.marshal_with({{table_plural_snakecase_name}}_resp_model)
+    def get(self):
+        """List all departments"""
+        
+        dao = {{ table_singular_pascal_name }}MetaClient()
+        dao.init_db(atlas_web_app.meta_client)
+        {{table_plural_snakecase_name}} = dao.read_all_{{ table_plural_snakecase_name }}()
+        return {"data":{{table_plural_snakecase_name}}, "code":200}
+
+   

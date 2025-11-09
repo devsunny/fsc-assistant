@@ -1,0 +1,35 @@
+[project]
+name = "{{project_name}}"
+version = "0.0.1"
+authors = [
+  { name="Sunny Liu", email="sunny.liu@kkr.com" },
+]
+
+description = "this is common based shared library"
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "setuptools>=61.0",
+    "twine>=6.1.0",
+    "wheel>=0.36.2",
+    "build>=0.10.0",
+    "pytest>=7.0",
+    "python-dotenv>=0.19.0",    
+]
+
+[project.optional-dependencies]
+# define optional package here
+
+
+[project.urls]
+Homepage = "https://gitlab-prod.delivery.kkr.cloud/datalake/atlas-shared-library"
+Issues = "https://gitlab-prod.delivery.kkr.cloud/datalake/atlas-shared-library/issues"
+
+
+

@@ -2,13 +2,16 @@
 # Requires: json, os, pathlib, datetime
 
 import json
-import os
-from pathlib import Path
+import logging
 from datetime import datetime
-from typing import List, Dict, Optional, Any
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
-class LLMHistoryManager:
+class LLMChatHistoryManager:
     """
     Manages LLM chat history with persistent storage in JSON format.
 
@@ -22,7 +25,9 @@ class LLMHistoryManager:
     """
 
     def __init__(
-        self, max_history: int = 200, history_file_path: Optional[Path] = None
+        self,
+        max_history: int = 200,
+        history_file_path: Optional[Union[Path, str]] = None,
     ):
         """
         Initialize the LLM Chat History Manager.
@@ -32,10 +37,11 @@ class LLMHistoryManager:
         """
         self.max_history = max_history
         self.history_file_path = (
-            history_file_path
+            Path(history_file_path)
             if history_file_path
             else Path.home() / ".fsc-assistant" / ".llm_message_history"
         )
+        logger.info("LLM History file:%s", self.history_file_path)
         self.history: List[Dict[str, Any]] = []
         self._ensure_directory_exists()
         self.load_history()

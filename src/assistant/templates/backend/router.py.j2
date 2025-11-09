@@ -1,0 +1,9 @@
+{% for table in tables %}
+from .api.{{ utils.to_singular_snake_case(table.name) }} import ns_{{utils.to_plural_snake_case(table.name)}}
+{% endfor%}
+
+
+def init_routes(api):
+    {% for table in tables %}
+    api.add_namespace(ns_{{utils.to_plural_snake_case(table.name)}})
+    {% endfor %}
