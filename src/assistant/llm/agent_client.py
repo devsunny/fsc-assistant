@@ -34,19 +34,18 @@ class AgentOrchestrator(LLMClient):
         base_url: str = None,
         api_key: str = None,
         openai_client: openai.OpenAI = None,
-        model: str = "qwen3-30b-a3b",
         stream_handler: Optional[Callable] = None,
         debug: bool = False,
         config: AssistantConfig = None,
     ):
-        super().__init__()
-        self.client = self._get_llm() if openai_client is None else openai_client
+        super().__init__(config)
+        self.client = openai_client or self._get_llm()
         if base_url:
             self.client.base_url = base_url
         if api_key:
             self.client.api_key = api_key
 
-        self.model = model
+        self.model = self.llm_models[0]
         # self.mcp_registry: MCPServerRepository = None
         self.stream_handler = stream_handler
         hist_file = config.get_option("llm", "chat_history_file", None)

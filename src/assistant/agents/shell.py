@@ -61,28 +61,13 @@ class AgenticShell:
         """
         self.console = Console()
         self.config = config if config is not None else AssistantConfig()
-        self.base_url = self.config.get_option("llm", "base_url")
-        self.llm_provider = self.config.get_option("llm", "provider") or "proxy"
-        self.api_key = self.config.get_option("llm", "api_key")
-        self.max_completion_tokens = self.config.get_int(
-            "llm", "max_completion_tokens", default=32000
-        )
-
-        models = self.config.get_option("llm", "models")
-        assert (
-            models is not None and len(models) > 0
-        ), f"please config LLM models in {AssistantConfig.CONFIG_FILENAME}"
-        self.llm_models = [models] if isinstance(models, str) else models
-        self.selected_model = models[0]
         self.cliconsole = CLIConsole()
         self.llm = AgentOrchestrator(
-            model=self.selected_model,
-            base_url=self.base_url,
-            api_key=self.api_key,
             stream_handler=lambda x: print(x, end="", flush=True),
             debug=os.environ.get("DEBUG", "False").lower() == "true",
             config=self.config,
         )
+        self.selected_model = self.llm.model
 
     def switch_model(self, model_id: str) -> str:
         """
@@ -252,7 +237,7 @@ class AgenticShell:
                 tools=self._get_tools(user_input),
                 include_history=50,
                 system_prompt=self.get_system_prompt(user_input),
-                max_completion_tokens=self.max_completion_tokens,
+                max_completion_tokens=self.llm.max_completion_tokens,
             )
             self.console.print()
             self.llm.chat_history.save_history()

@@ -32,6 +32,7 @@ class LLMClient:
             llm_key = KEY_LLM
         else:
             llm_key = self.llm_provider
+
         self.base_url = self.config.get_option(llm_key, KEY_BASE_URL)
         self.api_key = self.config.get_option(llm_key, KEY_API_KEY)
         self.client_id = self.config.get_option(llm_key, KEY_CLIENT_ID)
@@ -40,7 +41,7 @@ class LLMClient:
             llm_key, KEY_MAX_COMPLETION_TOKENS, default=150000
         )
         self.user_selected_model = None
-        models = self.config.get_option(KEY_LLM, KEY_MODELS)
+        models = self.config.get_option(llm_key, KEY_MODELS)
         assert (
             models is not None and len(models) > 0
         ), f"please config LLM models in {AssistantConfig.CONFIG_FILENAME}"
@@ -60,12 +61,13 @@ class LLMClient:
             assert (
                 self.api_key is not None
             ), f"please config LLM api_key in {AssistantConfig.CONFIG_FILENAME}"
+        self.granular_timeout = self.get_timeout()
 
     @property
     def native_client(self):
         return self._get_llm()
 
-    def _get_llm(self) -> OpenAI:
+    def get_timeout(self) -> httpx.Timeout:
         read_timeout = self.config.get_float("llm", "read_timeout", default=180)
         connect_timeout = self.config.get_float("llm", "connect_timeout", default=5.0)
         write_timeout = self.config.get_float("llm", "write_timeout", default=5.0)
@@ -75,30 +77,9 @@ class LLMClient:
             read=read_timeout,
             write=write_timeout,
         )
-        if self.llm_provider == "openai" or self.api_key is not None:
-            if self.base_url is not None:
-                llm = OpenAI(
-                    base_url=self.base_url,
-                    api_key=self.api_key,
-                    timeout=granular_timeout,
-                )
-            else:
-                llm = OpenAI(api_key=self.api_key, timeout=granular_timeout)
-        else:
-            llm = OpenAI(
-                base_url=self.base_url, api_key=self.client_id, timeout=granular_timeout
-            )
-        return llm
+        return granular_timeout
 
-    def invoke_model(
-        self,
-        prompt=None,
-        messages=None,
-        max_tokens: int = 0,
-        max_completion_tokens: int = 0,
-        temperature=0.1,
-    ) -> str:
-        llm = self._get_llm()
+    def _get_llm(self) -> OpenAI:
         extra_headers = None
         if self.client_id and self.client_secret:
             extra_headers = {
@@ -107,6 +88,23 @@ class LLMClient:
                 "Application-Name": "Atlas-Phanes",
                 "Username": getpass.getuser(),
             }
+
+        llm = OpenAI(
+            base_url=self.base_url,
+            api_key=self.api_key,
+            timeout=self.granular_timeout,
+            default_headers=extra_headers,
+        )
+        return llm
+
+    def invoke_model(
+        self,
+        prompt=None,
+        messages=None,
+        max_tokens: int = 0,
+        max_completion_tokens: int = 0,
+    ) -> str:
+        llm = self._get_llm()
         req_max_tokens = max(max_tokens, max_completion_tokens)
         if req_max_tokens == 0:
             req_max_tokens = None
@@ -125,7 +123,6 @@ class LLMClient:
                     model=model_id,  # or any other model you want to use
                     max_tokens=req_max_tokens,
                     messages=input_messages,
-                    extra_headers=extra_headers,
                 )
                 return response.choices[0].message.content
             except RateLimitError as e:
