@@ -1,7 +1,9 @@
 """CLI utilities and helpers."""
 
-from .console import *
-from .executor import *
+from .console import CLIConsole
+from .executor import execute_command_interactive
 
-
-__all__ = []
+__all__ = [
+    "CLIConsole",
+    "execute_command_interactive",
+]

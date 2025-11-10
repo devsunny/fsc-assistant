@@ -367,11 +367,16 @@ class AgenticShell:
                     continue
 
                 # Call LLM API
-                self.cliconsole.print(const.MSG_ASSISTANT_PREFIX, color="green")
+                self.cliconsole.print(
+                    const.MSG_ASSISTANT_PREFIX, color="green", end=" "
+                )
                 response = self.run_workflow(user_input)
 
                 if not response:
-                    self.cliconsole.print(const.MSG_NO_RESPONSE, color="red")
+                    self.cliconsole.print(
+                        const.MSG_NO_RESPONSE, color="red", end="\n\n"
+                    )
+                    self.cliconsole.print(user_input, color="red", end="\n\n")
                     continue
                 else:
                     self.console.print(
