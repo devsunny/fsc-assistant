@@ -24,7 +24,7 @@ from assistant.utils.path import get_project_root
 from ..llm.agent_client import AgentOrchestrator
 from . import shell_constants as const
 from . import shell_help
-from .agent_repo import tools
+from .agent_repo import load_tools
 
 from .utils.prompts import CODING_ASSISTANT_SYSTEM_PROMPT
 
@@ -68,6 +68,7 @@ class AgenticShell:
             config=self.config,
         )
         self.selected_model = self.llm.model
+        self.cached_tools = None
 
     def switch_model(self, model_id: str) -> str:
         """
@@ -182,7 +183,10 @@ class AgenticShell:
         Returns:
             List of tool functions available for this request
         """
-        return tools
+        if self.cached_tools is None:
+            self.cached_tools = load_tools()
+
+        return self.cached_tools
 
     def refine_user_prompt(self, user_input: str) -> str:
         """

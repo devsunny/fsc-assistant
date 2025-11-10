@@ -7,6 +7,7 @@ _core_tools_cache = None
 _integration_tools_cache = None
 _tools_cache = None
 
+
 def _load_core_tools() -> List[Any]:
     """Load core tools on first access."""
     global _core_tools_cache
@@ -27,7 +28,7 @@ def _load_core_tools() -> List[Any]:
             download_web_file_from_url,
             search_google_custom_api,
         )
-        
+
         _core_tools_cache = [
             run_shell_command,
             get_current_local_time,
@@ -44,6 +45,7 @@ def _load_core_tools() -> List[Any]:
         ]
     return _core_tools_cache
 
+
 def _load_integration_tools() -> List[Any]:
     """Load integration tools on first access."""
     global _integration_tools_cache
@@ -55,7 +57,7 @@ def _load_integration_tools() -> List[Any]:
             create_jira_issue,
             create_github_pull_request,
         )
-        
+
         _integration_tools_cache = [
             get_jira_issue,
             update_jira_issue_status,
@@ -65,24 +67,10 @@ def _load_integration_tools() -> List[Any]:
         ]
     return _integration_tools_cache
 
-@property
-def tools() -> List[Any]:
+
+def load_tools() -> List[Any]:
     """Get all available tools (lazy loaded)."""
     global _tools_cache
     if _tools_cache is None:
         _tools_cache = _load_core_tools() + _load_integration_tools()
     return _tools_cache
-
-# Backward compatibility - direct access loads immediately
-def __getattr__(name: str):
-    """Lazy load tools on first access."""
-    if name == "CORE_TOOLS":
-        return _load_core_tools()
-    elif name == "INTEGRATION_TOOLS":
-        return _load_integration_tools()
-    elif name == "tools":
-        return tools
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-# Export for explicit imports
-__all__ = ["tools"]
