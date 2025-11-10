@@ -24,7 +24,7 @@ from assistant.utils.path import get_project_root
 from ..llm.agent_client import AgentOrchestrator
 from . import shell_constants as const
 from . import shell_help
-from .tools import tools
+from .agent_repo import tools
 
 from .utils.prompts import CODING_ASSISTANT_SYSTEM_PROMPT
 
@@ -363,11 +363,11 @@ class AgenticShell:
                     continue
 
                 # Call LLM API
-                self.cliconsole.print(const.MSG_ASSISTANT_PREFIX, color="green", end="")
+                self.cliconsole.print(const.MSG_ASSISTANT_PREFIX, color="green")
                 response = self.run_workflow(user_input)
 
                 if not response:
-                    self.cliconsole.print(const.MSG_NO_RESPONSE, color="red", end="")
+                    self.cliconsole.print(const.MSG_NO_RESPONSE, color="red")
                     continue
                 else:
                     self.console.print(
@@ -375,9 +375,9 @@ class AgenticShell:
                     )
 
             except KeyboardInterrupt:
-                self.cliconsole.print(const.MSG_USE_EXIT, color="yellow", end="")
+                self.cliconsole.print(const.MSG_USE_EXIT, color="yellow")
             except Exception as e:
-                self.cliconsole.print(f"Error: {str(e)}", color="red", end="")
+                self.cliconsole.print(f"Error: {str(e)}", color="red")
 
 
 @click.command()

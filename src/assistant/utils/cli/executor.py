@@ -3,8 +3,6 @@
 Real-time System Command Executor
 Execute system commands and print output in real-time as it's generated.
 """
-
-import queue
 import shlex
 import subprocess
 import sys

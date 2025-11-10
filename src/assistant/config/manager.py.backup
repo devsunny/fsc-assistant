@@ -139,10 +139,6 @@ class AssistantConfig:
                 "default_project": "",
             },
             "github": {"token": "", "default_owner": "", "default_repo": ""},
-            "google": {
-                "api_key": "",
-                "search_engine_id": "",
-            },
             "mcp": {
                 "registry": str(self.HOME_CONFIG_DIR / "mcp.json"),
                 "enabled": True,

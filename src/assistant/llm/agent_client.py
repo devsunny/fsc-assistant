@@ -14,7 +14,7 @@ from tenacity import (
 )
 
 from assistant.config.manager import AssistantConfig
-from assistant.agents.tools.agent_discovery import discover_tools
+from assistant.agents.agent_discovery import discover_tools
 from ..utils.llm.error_logger import log_error
 from ..utils.llm.token_utils import count_message_tokens
 from .client import LLMClient
@@ -97,6 +97,7 @@ class AgentOrchestrator(LLMClient):
             tool_messages[-1]["content"] = result
         else:
             tool_messages[-1]["content"] = json.dumps(result)
+        print("Tool executed:", tool_name)
         return tool_messages
 
     def _extend_history(
@@ -532,7 +533,7 @@ class AgentOrchestrator(LLMClient):
                 tool_type = call.type
                 tool_name = call.function.name
                 tool_args_json = call.function.arguments
-                tool_calls.append((tool_call_id, tool_name, tool_args_json))
+                tool_calls.append((tool_call_id, tool_type, tool_name, tool_args_json))
 
             if tool_calls:
                 calls, results = self._handle_tool_calls(
