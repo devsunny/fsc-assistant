@@ -1,11 +1,11 @@
-"""
-Interactive shell for the Kara Code AI assistant.
+"""Interactive shell for the Kara Code AI assistant.
 
 This module provides an interactive command-line interface for interacting with
 the Kara Code AI assistant. It supports multi-line input, command history,
 document analysis, and various special commands.
 """
 
+import json
 import logging
 import os
 from pathlib import Path
@@ -18,7 +18,7 @@ from rich.panel import Panel
 
 from ..config.manager import AssistantConfig
 from assistant.utils.cli.console import CLIConsole
-from assistant.utils.cli.executor import execute_command_interactive
+from assistant.utils.cli.executor import execute_command_realtime_combined, execute_command_with_output
 from assistant.utils.path import get_project_root
 
 from ..llm.agent_client import AgentOrchestrator
@@ -47,6 +47,7 @@ class AgenticShell:
         tools_repository: Repository of available tools
         tool_selector: Optional tool selector for intelligent tool selection
         selected_model: Currently active LLM model
+        last_command_output: Stores the output of the most recently executed command
     """
 
     def __init__(self, config: Optional[AssistantConfig] = None) -> None:
@@ -69,6 +70,7 @@ class AgenticShell:
         )
         self.selected_model = self.llm.model
         self.cached_tools = None
+        self.last_command_output = None
 
     def switch_model(self, model_id: str) -> str:
         """
@@ -278,6 +280,7 @@ class AgenticShell:
         - Help
         - History management
         - MCP status
+        - Ask AI analysis
 
         Args:
             command: Command string to process
@@ -292,15 +295,27 @@ class AgenticShell:
         # System command execution
         if command_lower.startswith("!"):
             system_command = command[1:]
-            status_code = execute_command_interactive(
-                system_command, shell=True, cwd=str(Path.cwd()), env=os.environ
-            )
-            if status_code == 0:
-                self.cliconsole.print(const.MSG_COMMAND_SUCCESS, color="green")
-            else:
-                self.cliconsole.print(
-                    const.MSG_COMMAND_FAILED.format(status_code), color="red"
-                )
+            
+            # Capture both stdout and stderr for better analysis
+            try:
+                status, stdout_output, stderr_output = execute_command_with_output(system_command)
+                
+                if status == 0:
+                    self.cliconsole.print(f"Command executed successfully", color="green")
+                else:
+                    self.cliconsole.print(f"Command failed with exit code {status}", color="red")
+                
+                
+                self.last_command_output = {
+                    "stdout": stdout_output,
+                    "stderr": stderr_output,
+                    "exit_code": status
+                }
+                
+            except Exception as e:
+                self.cliconsole.print(f"Error executing command: {str(e)}", color="red")
+                self.last_command_output = f"Error executing command: {str(e)}"
+            
             return True
 
         # Exit commands
@@ -336,6 +351,19 @@ class AgenticShell:
 
         # MCP status (placeholder)
         if const.PATTERN_MCP_STATUS.search(command_lower):
+            return True
+            
+        # Ask AI command
+        if const.PATTERN_ASK_AI.search(command_lower) or const.PATTERN_ANALYZE.search(command_lower):
+            if self.last_command_output is None:
+                self.cliconsole.print("No command output available for analysis.", color="yellow")
+                return True            
+            # Prepare prompt with captured output
+            analysis_prompt = f"Analyze the following shell command output:\n\n{json.dumps(self.last_command_output, indent=2)}\n\nProvide insights and next steps."            
+            # Call LLM analysis using existing workflow
+            response = self.run_workflow(analysis_prompt)
+            if response:
+                self.console.print(Panel(Markdown(response), title="AI Analysis"))
             return True
 
         return None
@@ -400,7 +428,7 @@ class AgenticShell:
 )
 def code_shell(config_path: Optional[str] = None) -> None:
     """Start an interactive LLM GenAI shell."""
-    shell = AgenticShell(config=config_path)
+    shell = AgenticShell(config_path)
     shell.run()
 
 

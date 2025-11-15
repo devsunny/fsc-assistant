@@ -3,6 +3,8 @@
 Real-time System Command Executor
 Execute system commands and print output in real-time as it's generated.
 """
+import os
+from pathlib import Path
 import shlex
 import subprocess
 import sys
@@ -152,9 +154,9 @@ def execute_command_realtime_combined(
 
         # Read and print output in real-time
         for line in process.stdout:
-            print(f"{prefix}{line}", end="", flush=True)
+            print(line, end="", flush=True)
             output_lines.append(line)
-
+        print("\n")
         # Wait for completion
         try:
             process.wait(timeout=timeout)
@@ -295,14 +297,14 @@ def execute_command_with_progress(
 
     Examples:
         >>> code = execute_command_with_progress("ls -la")
-        ┌─────────────────────────────────────────
+        ┌─────────────────────────────────────────────────────────────────────────────
         │ Executing: ls -la
-        └─────────────────────────────────────────
+        └─────────────────────────────────────────────────────────────────────────────
         total 48
         drwxr-xr-x  ...
-        ┌─────────────────────────────────────────
+        ┌─────────────────────────────────────────────────────────────────────────────
         │ Exit code: 0 ✓
-        └─────────────────────────────────────────
+        └─────────────────────────────────────────────────────────────────────────────
     """
     if show_command:
         print("┌" + "─" * 45)
@@ -360,6 +362,66 @@ def execute_command_interactive(
     except Exception as e:
         print(f"[ERROR] {str(e)}", file=sys.stderr)
         return -1
+
+
+def execute_command_with_output(
+    command: str,    
+    cwd: Optional[str] = Path.cwd(),
+    env: Optional[dict] = os.environ.copy()   
+) -> Tuple[int, str, str]:
+    """
+    Execute a shell command interactively.
+    Prints stdout and stderr as they are produced.
+    Captures both outputs and returns them along with the exit code.
+
+    Args:
+        cmd (str | list): Command to execute (string or list of arguments).
+
+    Returns:
+        tuple: (exit_code, stdout_output, stderr_output)
+    """
+    try:
+        process = subprocess.Popen(
+            command,
+            shell=isinstance(command, str),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+            universal_newlines=True
+        )
+
+        stdout_lines = []
+        stderr_lines = []
+
+        # Read outputs line by line
+        while True:
+            stdout_line = process.stdout.readline()
+            stderr_line = process.stderr.readline()
+
+            if stdout_line:
+                print(stdout_line, end='', flush=True)  # print live
+                stdout_lines.append(stdout_line)
+
+            if stderr_line:
+                print(stderr_line, end='', flush=True)  # print live
+                stderr_lines.append(stderr_line)
+
+            if process.poll() is not None:
+                # Drain any remaining output
+                for remaining in process.stdout.readlines():
+                    print(remaining, end='')
+                    stdout_lines.append(remaining)
+                for remaining in process.stderr.readlines():
+                    print(remaining, end='')
+                    stderr_lines.append(remaining)
+                break
+
+        exit_code = process.returncode
+        return exit_code, ''.join(stdout_lines), ''.join(stderr_lines)    
+    except Exception as e:
+        print(f"[ERROR] {str(e)}", file=sys.stderr)
+        return -1, '', str(e)
 
 
 def stream_command_output(
@@ -519,6 +581,14 @@ def main():
     print("-" * 50)
     code = execute_command_realtime("ping -c 3 127.0.0.1")
     print(f"Exit code: {code}\n")
+
+    # Example 11: New function with output capture
+    print("\n11. New function with output capture:")
+    print("-" * 50)
+    code, stdout, stderr = execute_command_with_output("echo 'hello world'")
+    print(f"Exit code: {code}")
+    print(f"Stdout: '{stdout.strip()}'")
+    print(f"Stderr: '{stderr.strip()}'\n")
 
     print("=" * 70)
     print("All examples completed!")
