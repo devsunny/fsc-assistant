@@ -45,7 +45,8 @@ PATTERN_NEW_CHAT: Pattern = re.compile(r"new(\s*chat)?$")
 PATTERN_SAVE_HISTORY: Pattern = re.compile(r"^save\s*history$")
 PATTERN_SHOW_HISTORY: Pattern = re.compile(r"^show\s*history$")
 PATTERN_MCP_STATUS: Pattern = re.compile(r"^mcp\s*status$")
-
+PATTERN_ASK_AI: Pattern = re.compile(r"^ask\s*ai$")
+PATTERN_ANALYZE: Pattern = re.compile(r"^analyze$")
 # OpenSpec command prefixes
 OPENSPEC_PROPOSAL_PREFIXES: List[str] = ["/openspec-proposal", "/openspec:proposal"]
 OPENSPEC_APPLY_PREFIXES: List[str] = ["/openspec-apply", "/openspec:apply"]

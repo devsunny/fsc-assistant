@@ -97,7 +97,7 @@ class AgentOrchestrator(LLMClient):
             tool_messages[-1]["content"] = result
         else:
             tool_messages[-1]["content"] = json.dumps(result)
-        print("Tool executed:", tool_name)
+        print(f"\nTool {tool_name} execution completed:")
         return tool_messages
 
     def _extend_history(
