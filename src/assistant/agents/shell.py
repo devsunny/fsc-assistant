@@ -27,6 +27,7 @@ from . import shell_help
 from .agent_repo import load_tools
 
 from .utils.prompts import CODING_ASSISTANT_SYSTEM_PROMPT
+from .query_analyzer import analyze_user_intent, Intent
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -158,20 +159,20 @@ class AgenticShell:
         Returns:
             System prompt text appropriate for the request type
         """
-        if user_input and self.is_document_analysis_request(user_input):
-            return const.DOCUMENT_ANALYSIS_SYSTEM_PROMPT
 
+        intent = analyze_user_intent(user_input or "")
         agent_md = get_project_root() / const.AGENTS_MD_FILENAME
-        if (
-            user_input
-            and user_input.startswith("/openspec")
-            and agent_md.exists()
-            and agent_md.is_file()
-        ):
-            return agent_md.read_text(encoding="UTF-8")
-        else:
-            return CODING_ASSISTANT_SYSTEM_PROMPT
+        has_agent = all([
+            user_input,
+            agent_md.exists()
+            , agent_md.is_file()
+        ])
+        if intent == Intent.UNKNOWN or has_agent is False:
+            return  CODING_ASSISTANT_SYSTEM_PROMPT
+        
+        return agent_md.read_text(encoding="UTF-8")        
 
+    
     def _get_tools(self, user_input: str) -> List:
         """
         Get tools for the current request.
@@ -202,9 +203,10 @@ class AgenticShell:
         Returns:
             Refined prompt, potentially with template applied
         """
+        intent = analyze_user_intent(user_input or "")
         refined_prompt = user_input
+        prompt_template = None
         if user_input.startswith("/openspec"):
-            prompt_template = None
             if any(
                 user_input.startswith(prefix)
                 for prefix in const.OPENSPEC_PROPOSAL_PREFIXES
@@ -219,12 +221,24 @@ class AgenticShell:
                 user_input.startswith(prefix)
                 for prefix in const.OPENSPEC_ARCHIVE_PREFIXES
             ):
-                prompt_template = const.OPENSPEC_ARCHIVE_TEMPLATE
-            if prompt_template:
-                prompt_path = get_project_root() / const.PROMPTS_DIR / prompt_template
-                if prompt_path.exists() and prompt_path.is_file():
-                    template_content = prompt_path.read_text(encoding="UTF-8")
-                    refined_prompt = template_content.replace("$ARGUMENTS", user_input)
+                prompt_template = const.OPENSPEC_ARCHIVE_TEMPLATE                
+        elif intent ==Intent.CREATE_PROPOSAL:
+            prompt_template = const.OPENSPEC_PROPOSAL_TEMPLATE
+        elif intent ==Intent.IMPLEMENT_PROPOSAL:
+            prompt_template = const.OPENSPEC_APPLY_TEMPLATE
+        elif intent ==Intent.MODIFY_EXISTING:
+            prompt_template = const.OPENSPEC_PROPOSAL_TEMPLATE
+        elif intent ==Intent.NEW_FEATURE:
+            prompt_template = const.OPENSPEC_PROPOSAL_TEMPLATE
+        elif intent ==Intent.ARCHIVE_PROPOSAL:
+            prompt_template = const.OPENSPEC_ARCHIVE_TEMPLATE  
+            
+        if prompt_template:
+            prompt_path = get_project_root() / const.PROMPTS_DIR / prompt_template
+            if prompt_path.exists() and prompt_path.is_file():
+                template_content = prompt_path.read_text(encoding="UTF-8")
+                refined_prompt = template_content.replace("$ARGUMENTS", user_input)
+                
         return refined_prompt
 
     def run_workflow(self, user_input: str) -> Optional[str]:
