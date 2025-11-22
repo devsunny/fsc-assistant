@@ -120,7 +120,7 @@ def _semantic_boosts(text: str, scores: Dict[Intent, int]) -> None:
         scores[Intent.IMPLEMENT_PROPOSAL] += 3
     if any(p in text for p in ["archive this proposal", "close this out", "mark as done", "wrap it up", "finalize proposal"]):
         scores[Intent.ARCHIVE_PROPOSAL] += 3
-    if any(p in text for p in ["it would be nice if", "add the ability to", "new capability", "introduce support for"]):
+    if any(p in text for p in ["it would be nice if", "add the ability to", "new capability", "introduce support for", "add new"]):
         scores[Intent.NEW_FEATURE] += 3
     if any(p in text for p in ["adjust the behavior", "change how it works", "rename the method", "increase the threshold"]):
         scores[Intent.MODIFY_EXISTING] += 3

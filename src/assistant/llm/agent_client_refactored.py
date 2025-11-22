@@ -260,52 +260,10 @@ class AgentOrchestrator(LLMClient):
                 kwargs["messages"][0:start_index] + kwargs["messages"][end_index:]
             )
 
-        has_mcp = any([tool.get("type") == "mcp" for tool in params.get("tools", [])])
-        if has_mcp:
-            response = self.invoke_responses(**params)
-        else:
-            response = self.client.chat.completions.create(**params)
+        response = self.client.chat.completions.create(**params)
             
         return response
-
-    @retry(
-        retry=retry_if_exception_type(RateLimitError),
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-        reraise=True,
-    )
-    def invoke_responses(self, **kwargs) -> Any:
-        """
-        Invoke responses with rate limiting retry logic.
-        
-        Args:
-            **kwargs: Response parameters
-            
-        Returns:
-            Response from the LLM
-        """
-        # Extract and process messages for parameter adjustment  
-        start_index = 0
-        end_index = 0
-        
-        if "messages" in kwargs and kwargs["messages"]:
-            if kwargs["messages"][0].get("role") == "system":
-                start_index = 1
-                
-            for i in range(start_index, len(kwargs["messages"])):
-                msg = kwargs["messages"][i]
-                if msg.get("role") != "tool":
-                    end_index = i
-                    break
-
-        params = {**kwargs}
-        if end_index > start_index:
-            params["messages"] = (
-                kwargs["messages"][0:start_index] + kwargs["messages"][end_index:]
-            )
-
-        response = self.client.responses.create(**params)
-        return response
+    
 
     def _handle_stream_response(self, response) -> Tuple[str, List[Tuple]]:
         """

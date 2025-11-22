@@ -5,6 +5,7 @@ from .project import get_current_project_root_folder, list_files_in_current_proj
 from .text_file import save_text_file_to_disk, load_text_file_from_disk
 from .binary_file import save_binary_file_to_disk, load_image_files_from_disk
 from .system_shell import run_shell_command
+from .file_system import change_working_directory
 
 __all__ = [
     "run_shell_command",
@@ -15,4 +16,5 @@ __all__ = [
     "load_text_file_from_disk",
     "save_binary_file_to_disk",
     "load_image_files_from_disk",
+    "change_working_directory",
 ]
