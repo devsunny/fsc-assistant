@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "web-scrawler": "file:../web_crawler"
+  }
+}
