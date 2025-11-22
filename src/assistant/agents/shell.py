@@ -222,16 +222,7 @@ class AgenticShell:
                 for prefix in const.OPENSPEC_ARCHIVE_PREFIXES
             ):
                 prompt_template = const.OPENSPEC_ARCHIVE_TEMPLATE                
-        elif intent ==Intent.CREATE_PROPOSAL:
-            prompt_template = const.OPENSPEC_PROPOSAL_TEMPLATE
-        elif intent ==Intent.IMPLEMENT_PROPOSAL:
-            prompt_template = const.OPENSPEC_APPLY_TEMPLATE
-        elif intent ==Intent.MODIFY_EXISTING:
-            prompt_template = const.OPENSPEC_PROPOSAL_TEMPLATE
-        elif intent ==Intent.NEW_FEATURE:
-            prompt_template = const.OPENSPEC_PROPOSAL_TEMPLATE
-        elif intent ==Intent.ARCHIVE_PROPOSAL:
-            prompt_template = const.OPENSPEC_ARCHIVE_TEMPLATE  
+        
             
         if prompt_template:
             prompt_path = get_project_root() / const.PROMPTS_DIR / prompt_template
