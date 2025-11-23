@@ -1,5 +1,7 @@
 export PYTHONPATH="/mnt/c/Users/sunny/devel/github/fsc-assistant/src:."
 export UV_LINK_MODE=copy
+export FSC_CONFIG_FILE=/home/sunny/.fsc-assistant.env.toml
 source "/mnt/c/Users/sunny/devel/github/fsc-assistant/.venv/bin/activate"
 alias fsc='python -m assistant.cli'
+alias fscshell='python -m assistant.cli shell'
 alias fsc2='python -m assistant.cli'

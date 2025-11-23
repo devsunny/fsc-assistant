@@ -18,7 +18,7 @@ from rich.panel import Panel
 
 from ..config.manager import AssistantConfig
 from assistant.utils.cli.console import CLIConsole
-from assistant.utils.cli.executor import execute_command_realtime_combined, execute_command_with_output
+from assistant.utils.cli.executor import execute_command_realtime_combined, execute_command_realtime_threaded, execute_command_with_output
 from assistant.utils.path import get_project_root
 
 from ..llm.agent_client import AgentOrchestrator
@@ -172,7 +172,7 @@ class AgenticShell:
         
         return agent_md.read_text(encoding="UTF-8")        
 
-    
+
     def _get_tools(self, user_input: str) -> List:
         """
         Get tools for the current request.
@@ -222,8 +222,9 @@ class AgenticShell:
                 for prefix in const.OPENSPEC_ARCHIVE_PREFIXES
             ):
                 prompt_template = const.OPENSPEC_ARCHIVE_TEMPLATE                
-        
             
+            
+
         if prompt_template:
             prompt_path = get_project_root() / const.PROMPTS_DIR / prompt_template
             if prompt_path.exists() and prompt_path.is_file():
@@ -303,7 +304,7 @@ class AgenticShell:
             
             # Capture both stdout and stderr for better analysis
             try:
-                status, stdout_output, stderr_output = execute_command_with_output(system_command)
+                status, stdout_output, stderr_output = execute_command_realtime_threaded(system_command)
                 
                 if status == 0:
                     self.cliconsole.print(f"Command executed successfully", color="green")
@@ -386,7 +387,7 @@ class AgenticShell:
         self.display_welcome()
         while True:
             try:
-                # Get user input
+                # Get user input with multi-line support and Ctrl+Shift+C cancellation
                 user_input = self.cliconsole.get_multiline_input()
 
                 if user_input is None:
@@ -417,6 +418,7 @@ class AgenticShell:
                     )
 
             except KeyboardInterrupt:
+                # Handle Ctrl+C gracefully - this is where we'll add cancellation logic
                 self.cliconsole.print(const.MSG_USE_EXIT, color="yellow")
             except Exception as e:
                 self.cliconsole.print(f"Error: {str(e)}", color="red")

@@ -14,6 +14,10 @@ def _load_core_tools() -> List[Any]:
     if _core_tools_cache is None:
         from .tools import (
             run_shell_command,
+            run_shell_command_daemon,
+            list_daemon_processes,
+            terminate_daemon_process,
+            check_daemon_status,
             get_current_local_time,
             get_current_project_root_folder,
             list_files_in_current_project,
@@ -32,6 +36,10 @@ def _load_core_tools() -> List[Any]:
 
         _core_tools_cache = [
             run_shell_command,
+            run_shell_command_daemon,
+            list_daemon_processes,
+            terminate_daemon_process,
+            check_daemon_status,
             get_current_local_time,
             get_current_project_root_folder,
             list_files_in_current_project,

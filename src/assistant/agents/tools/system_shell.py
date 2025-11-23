@@ -9,6 +9,7 @@ from assistant.utils.cli.executor import (
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+debug = os.getenv("FSC_ASSISTANT_DEBUG", "false").lower() == "true"
 
 def run_shell_command(command_string: str, interactive: bool = False, timeout: int = None) -> str:
     """
@@ -99,6 +100,10 @@ def run_shell_command(command_string: str, interactive: bool = False, timeout: i
                     logger.debug(f"Command completed successfully with exit code: {result.returncode}")
                     # Return combined stdout and stderr, or just stdout if no stderr
                     output = result.stdout + result.stderr if result.stderr else result.stdout
+                    if debug is True:
+                        print(">>>>>>>>>>> timeout Command Output Start >>>>>>>>>>>")
+                        print(output)
+                        print("<<<<<<<<<<< timeout Command Output End <<<<<<<<<<")
                     return output
                 except subprocess.TimeoutExpired as e:
                     error_msg = f"Command timed out after {timeout} seconds. Command: {command_string}"
@@ -110,6 +115,10 @@ def run_shell_command(command_string: str, interactive: bool = False, timeout: i
                 exit_code, result = execute_command_realtime_combined(
                     command_string, shell=True, env=os.environ
                 )
+                if debug is True:
+                    print(">>>>>>>>>>> Command Output Start >>>>>>>>>>>")
+                    print(result)
+                    print("<<<<<<<<<<< Command Output End <<<<<<<<<<")
                 return result
                 
     except FileNotFoundError as e:

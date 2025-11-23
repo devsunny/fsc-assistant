@@ -22,7 +22,7 @@ class AssistantConfig:
         config_data (Dict[str, Any]): Loaded configuration data
         config_file_path (Optional[Path]): Path to the active configuration file
     """
-
+    ENV_CONFIG_FILENAME = "FSC_CONFIG_FILE"
     CONFIG_FILENAME = ".fsc-assistant.env.toml"
     HOME_CONFIG_DIR = Path.home() / ".fsc-assistant"
     VALID_PROJECT_TYPES = [
@@ -59,7 +59,7 @@ class AssistantConfig:
         file taking precedence.
         """
         self.config_file_path, self.global_config_path = self._find_config_files()
-
+                
         self._initialize_default_config()
 
         if self.global_config_path and self.global_config_path.exists():
@@ -97,6 +97,12 @@ class AssistantConfig:
         # Check user home directory
         home_config = self.HOME_CONFIG_DIR / self.CONFIG_FILENAME
         os.makedirs(self.HOME_CONFIG_DIR, exist_ok=True)
+        env_config_file = os.environ.get(self.ENV_CONFIG_FILENAME)
+        if env_config_file:
+            env_config_path = Path(env_config_file)
+            if env_config_path.exists():
+                return env_config_path, home_config
+        
         return config_file, home_config
 
     def _merge_config(self, new_config: Dict[str, Any]) -> None:

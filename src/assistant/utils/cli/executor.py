@@ -355,8 +355,9 @@ def execute_command_interactive(
             cmd_args = command
 
         # Run with inherited stdin/stdout/stderr for full interactivity
-        process = subprocess.run(cmd_args, shell=shell, cwd=cwd, env=env)
+        process = subprocess.run(cmd_args, shell=shell, capture_output=True, cwd=cwd, env=env)
 
+        
         return process.returncode
 
     except Exception as e:

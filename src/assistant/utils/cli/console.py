@@ -1,3 +1,4 @@
+import signal
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -67,6 +68,8 @@ class CLIConsole:
                     lines.pop()  # Remove the last empty line
                     break
                 lines.append(line)
+                
+                #signal.CTRL_BREAK_EVENT
 
         except KeyboardInterrupt:
             console_print(HTML(f"<ansiyellow>Input cancelled</ansiyellow>"))
