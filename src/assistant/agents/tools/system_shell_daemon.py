@@ -1,4 +1,5 @@
 import os
+import re
 import signal
 import subprocess
 import threading
@@ -224,8 +225,30 @@ def check_daemon_status(pid: int) -> dict:
             "pid": pid,
             "command": info["command"],
             "start_time": info["start_time"],
-            "status": info["status"],
         }
+
+
+def is_frontend_dev_server(command: str) -> bool:
+    """
+    Detects if a shell command string is likely starting a frontend dev server.
+    """
+    # Normalize command to lowercase
+    cmd = command.lower()
+
+    # Common frontend dev server keywords
+    patterns = [
+        r"npm\s+run\s+(dev|start|serve)",
+        r"yarn\s+(dev|start|serve)",
+        r"pnpm\s+run\s+(dev|start|serve)",
+        r"next\s+dev",
+        r"vite\s+serve?",
+        r"nuxt\s+(dev|start)",
+        r"react-scripts\s+start",
+        r"vue-cli-service\s+serve",
+        r"ng\s+serve",  # Angular
+    ]
+
+    return any(re.search(p, cmd) for p in patterns)
 
 
 def run_shell_command(
@@ -251,7 +274,7 @@ def run_shell_command(
     if not isinstance(daemon_mode, bool):
         raise TypeError("daemon_mode must be a boolean")
 
-    if command_string.strip() == "npm run dev":
+    if is_frontend_dev_server(command_string):
         daemon_mode = True
 
     # Handle daemon mode
