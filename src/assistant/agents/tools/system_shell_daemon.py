@@ -4,7 +4,7 @@ import subprocess
 import threading
 import time
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 from assistant.utils.cli.executor import (
     execute_command_realtime_combined,
     execute_command_interactive,
@@ -14,6 +14,7 @@ from assistant.utils.cli.executor import (
 _daemon_processes: Dict[int, dict] = {}
 _process_lock = threading.Lock()
 
+
 def _cleanup_terminated_processes():
     """Clean up terminated processes from the registry."""
     global _daemon_processes
@@ -21,40 +22,51 @@ def _cleanup_terminated_processes():
         current_time = time.time()
         # Simple cleanup - remove processes that have been terminated for more than 5 minutes
         expired_pids = [
-            pid for pid, info in _daemon_processes.items() 
-            if info.get('status') == 'terminated' and (current_time - (info.get('end_time', current_time).timestamp() if hasattr(info.get('end_time'), 'timestamp') else info.get('end_time', current_time))) > 300
+            pid
+            for pid, info in _daemon_processes.items()
+            if info.get("status") == "terminated"
+            and (
+                current_time
+                - (
+                    info.get("end_time", current_time).timestamp()
+                    if hasattr(info.get("end_time"), "timestamp")
+                    else info.get("end_time", current_time)
+                )
+            )
+            > 300
         ]
         for pid in expired_pids:
             del _daemon_processes[pid]
 
+
 def run_shell_command_daemon(command_string: str, timeout: int = None) -> dict:
     """
     Runs a shell command in daemon mode (background process).
-    
-    This function launches the specified command as a background process that 
+
+    This function launches the specified command as a background process that
     runs independently of the main execution thread. The process can be managed
     and terminated using provided management functions.
-    
+
     Args:
         command_string: The shell command to execute
         timeout: Optional timeout in seconds for command execution
-        
+
     Returns:
         dict: Process information including PID, status, start time, and command
-        
+
     Examples:
         >>> # Start a long-running process in daemon mode
         >>> result = run_shell_command_daemon("sleep 3600")
         >>> print(f"Started daemon with PID: {result['pid']}")
-        
+
         >>> # Start with timeout
         >>> result = run_shell_command_daemon("ping google.com", timeout=10)
     """
-    
+
     # Validate input parameters
     if not isinstance(command_string, str):
         raise TypeError("command_string must be a string")
-        
+
     if timeout is not None and (not isinstance(timeout, int) or timeout <= 0):
         raise ValueError("timeout must be a positive integer or None")
 
@@ -68,79 +80,85 @@ def run_shell_command_daemon(command_string: str, timeout: int = None) -> dict:
             text=True,
             preexec_fn=os.setsid,  # Create new process group to isolate from terminal signals
         )
-        
+
         pid = process.pid
-        
+
         # Register the process in our registry
         process_info = {
-            'pid': pid,
-            'command': command_string,
-            'start_time': datetime.now(),
-            'status': 'running',
-            'timeout': timeout
+            "pid": pid,
+            "command": command_string,
+            "start_time": datetime.now(),
+            "status": "running",
+            "timeout": timeout,
         }
-        
+
         with _process_lock:
             _daemon_processes[pid] = process_info
-            
+
         # If a timeout is specified, set up automatic termination
         if timeout is not None:
+
             def kill_after_timeout():
                 time.sleep(timeout)
                 try:
                     # Check if process still exists and terminate it
                     with _process_lock:
-                        if pid in _daemon_processes and _daemon_processes[pid]['status'] == 'running':
+                        if (
+                            pid in _daemon_processes
+                            and _daemon_processes[pid]["status"] == "running"
+                        ):
                             os.killpg(os.getpgid(pid), signal.SIGTERM)
-                            _daemon_processes[pid]['status'] = 'terminated'
-                            _daemon_processes[pid]['end_time'] = datetime.now()
+                            _daemon_processes[pid]["status"] = "terminated"
+                            _daemon_processes[pid]["end_time"] = datetime.now()
                 except Exception:
                     # Process might have already terminated
                     pass
-            
+
             timeout_thread = threading.Thread(target=kill_after_timeout, daemon=True)
             timeout_thread.start()
-        
+
         return {
-            'pid': pid,
-            'status': 'running',
-            'start_time': process_info['start_time'],
-            'command': command_string
+            "pid": pid,
+            "status": "running",
+            "start_time": process_info["start_time"],
+            "command": command_string,
         }
-        
+
     except Exception as e:
         error_msg = f"Failed to start daemon process for command: {command_string}. Error: {str(e)}"
         raise RuntimeError(error_msg) from e
 
+
 def list_daemon_processes() -> List[dict]:
     """
     List all currently running daemon processes.
-    
+
     Returns:
         List[dict]: Information about each running daemon process
     """
     _cleanup_terminated_processes()
-    
+
     with _process_lock:
         # Return copy of current processes to avoid external modification
         return [
             {
-                'pid': pid,
-                'command': info['command'],
-                'start_time': info['start_time'],
-                'status': info['status']
+                "pid": pid,
+                "command": info["command"],
+                "start_time": info["start_time"],
+                "status": info["status"],
             }
-            for pid, info in _daemon_processes.items() 
-            if info.get('status') == 'running'
+            for pid, info in _daemon_processes.items()
+            if info.get("status") == "running"
         ]
+
 
 def terminate_daemon_process(pid: int) -> bool:
     """
     Terminate a specific daemon process by PID.
-    
+
     Args:
         pid (int): The process ID to terminate
-        
+
     Returns:
         bool: True if termination was successful, False otherwise
     """
@@ -148,146 +166,93 @@ def terminate_daemon_process(pid: int) -> bool:
         with _process_lock:
             if pid not in _daemon_processes:
                 return False
-                
+
             # Mark as terminating first
-            _daemon_processes[pid]['status'] = 'terminating'
-            
+            _daemon_processes[pid]["status"] = "terminating"
+
         # Send SIGTERM to the process group (to handle child processes)
         os.killpg(os.getpgid(pid), signal.SIGTERM)
-        
+
         with _process_lock:
             if pid in _daemon_processes:
-                _daemon_processes[pid]['status'] = 'terminated'
-                _daemon_processes[pid]['end_time'] = datetime.now()
-                
+                _daemon_processes[pid]["status"] = "terminated"
+                _daemon_processes[pid]["end_time"] = datetime.now()
+
         return True
-        
+
     except Exception as e:
         # If process already terminated or doesn't exist, that's okay
         with _process_lock:
             if pid in _daemon_processes:
-                _daemon_processes[pid]['status'] = 'terminated'
-                _daemon_processes[pid]['end_time'] = datetime.now()
+                _daemon_processes[pid]["status"] = "terminated"
+                _daemon_processes[pid]["end_time"] = datetime.now()
         return False
+
 
 def check_daemon_status(pid: int) -> dict:
     """
     Check status of a daemon process.
-    
+
     Args:
         pid (int): The process ID to check
-        
+
     Returns:
         dict: Status information about the process
     """
     with _process_lock:
         if pid not in _daemon_processes:
-            return {'status': 'not_found'}
-            
+            return {"status": "not_found"}
+
         info = _daemon_processes[pid]
         # Check actual process status
         try:
             os.kill(pid, 0)  # This will raise OSError if process doesn't exist
             # Process exists, check if it's still running or terminated
-            if info['status'] == 'running':
+            if info["status"] == "running":
                 return {
-                    'pid': pid,
-                    'command': info['command'],
-                    'start_time': info['start_time'],
-                    'status': 'running'
+                    "pid": pid,
+                    "command": info["command"],
+                    "start_time": info["start_time"],
+                    "status": "running",
                 }
         except OSError:
             # Process doesn't exist, update registry
-            _daemon_processes[pid]['status'] = 'terminated'
-            _daemon_processes[pid]['end_time'] = datetime.now()
-            
+            _daemon_processes[pid]["status"] = "terminated"
+            _daemon_processes[pid]["end_time"] = datetime.now()
+
         return {
-            'pid': pid,
-            'command': info['command'],
-            'start_time': info['start_time'],
-            'status': info['status']
+            "pid": pid,
+            "command": info["command"],
+            "start_time": info["start_time"],
+            "status": info["status"],
         }
 
+
 def run_shell_command(
-    command_string: str, 
-    interactive: bool = False, 
-    timeout: int = None, 
-    daemon_mode: bool = False
+    command_string: str,
+    interactive: bool = False,
+    timeout: int = None,
+    daemon_mode: bool = False,
 ) -> str:
     """
     Runs a shell command on the host system.
-    
-    This function supports two execution modes:
-
-    1. **Non-interactive mode (default)**: Captures and returns command output.
-       Use this for commands that don't require user input (ls, grep, cat, etc.)
-
-    2. **Interactive mode**: Allows direct user input to the command.
-       Use this for commands that require user interaction (vim, python REPL, less, etc.)
-       
-    3. **Daemon mode**: Runs command in background as a daemon process.
-       Use this for long-running processes that should not block execution.
-
-    Args:
-        command_string: The shell command to execute
-        interactive: If True, runs in interactive mode allowing user input.
-                    If False (default), captures and returns output.
-        timeout: Optional timeout in seconds for command execution. 
-                If None (default), no timeout is applied.
-        daemon_mode: If True, runs the command as a background daemon process
-        
-    Returns:
-        str: For non-interactive mode, returns the captured command output.
-             For interactive mode, returns a message with the exit code.
-             For daemon mode, returns process information.
-
-    Examples:
-        Non-interactive commands (default behavior):
-        >>> output = run_shell_command("ls -la")
-        >>> output = run_shell_command("grep 'pattern' file.txt")
-        >>> output = run_shell_command("cat README.md")
-
-        Interactive commands (requires interactive=True):
-        >>> run_shell_command("vim config.py", interactive=True)
-        >>> run_shell_command("python3", interactive=True)  # Start Python REPL
-        >>> run_shell_command("less large_file.log", interactive=True)
-        >>> run_shell_command("nano README.md", interactive=True)
-
-        Commands with timeout:
-        >>> output = run_shell_command("sleep 10", timeout=5)  # Will timeout
-
-        Daemon mode commands (requires daemon_mode=True):
-        >>> result = run_shell_command("ping google.com", daemon_mode=True)
-        >>> print(f"Started daemon with PID: {result['pid']}")
-
-    Interactive Mode Use Cases:
-        - Text editors: vim, nano, emacs
-        - REPLs: python, python3, node, irb, ipython
-        - Pagers: less, more
-        - Debuggers: pdb, gdb
-        - Interactive installers or configuration tools
-
-    Notes:
-        - Interactive mode inherits stdin/stdout/stderr for full terminal control
-        - Interactive mode does not capture output (it goes directly to terminal)
-        - Non-interactive mode captures both stdout and stderr
-        - Default behavior (interactive=False) maintains backward compatibility
-        - When timeout is specified, commands that exceed the limit will raise TimeoutExpired
-        - Daemon mode allows running long-running processes in background
     """
-    
+
     # Validate input parameters
     if not isinstance(command_string, str):
         raise TypeError("command_string must be a string")
-        
+
     if not isinstance(interactive, bool):
         raise TypeError("interactive must be a boolean")
-        
+
     if timeout is not None and (not isinstance(timeout, int) or timeout <= 0):
         raise ValueError("timeout must be a positive integer or None")
-        
+
     if not isinstance(daemon_mode, bool):
         raise TypeError("daemon_mode must be a boolean")
+
+    if command_string.strip() == "npm run dev":
+        daemon_mode = True
 
     # Handle daemon mode
     if daemon_mode:
@@ -296,9 +261,10 @@ def run_shell_command(
 
     # Log command execution start
     import logging
+
     logger = logging.getLogger(__name__)
     logger.debug(f"Starting command execution: {command_string}")
-    
+
     try:
         if interactive:
             logger.debug(f"Running command in interactive mode: {command_string}")
@@ -308,7 +274,7 @@ def run_shell_command(
             return f"Command exited with code: {exit_code}"
         else:
             logger.debug(f"Running command in non-interactive mode: {command_string}")
-            
+
             # Handle timeout for non-interactive mode using subprocess.run
             if timeout is not None:
                 try:
@@ -318,11 +284,17 @@ def run_shell_command(
                         env=os.environ,
                         capture_output=True,
                         text=True,
-                        timeout=timeout
+                        timeout=timeout,
                     )
-                    logger.debug(f"Command completed successfully with exit code: {result.returncode}")
+                    logger.debug(
+                        f"Command completed successfully with exit code: {result.returncode}"
+                    )
                     # Return combined stdout and stderr, or just stdout if no stderr
-                    output = result.stdout + result.stderr if result.stderr else result.stdout
+                    output = (
+                        result.stdout + result.stderr
+                        if result.stderr
+                        else result.stdout
+                    )
                     return output
                 except subprocess.TimeoutExpired as e:
                     error_msg = f"Command timed out after {timeout} seconds. Command: {command_string}"
@@ -335,66 +307,74 @@ def run_shell_command(
                     command_string, shell=True, env=os.environ
                 )
                 return result
-                
+
     except FileNotFoundError as e:
         error_msg = f"Command not found: {command_string}. Error: {str(e)}"
         logger.error(error_msg)
         raise RuntimeError(error_msg) from e
-        
+
     except PermissionError as e:
-        error_msg = f"Permission denied executing command: {command_string}. Error: {str(e)}"
+        error_msg = (
+            f"Permission denied executing command: {command_string}. Error: {str(e)}"
+        )
         logger.error(error_msg)
         raise RuntimeError(error_msg) from e
-        
+
     except subprocess.SubprocessError as e:
         error_msg = f"Subprocess execution failed for command: {command_string}. Error: {str(e)}"
         logger.error(error_msg)
         raise RuntimeError(error_msg) from e
-        
+
     except TimeoutError:
         # Re-raise TimeoutError directly to maintain proper exception type
         raise
-        
+
     except Exception as e:
-        error_msg = f"Unexpected error executing command: {command_string}. Error: {str(e)}"
+        error_msg = (
+            f"Unexpected error executing command: {command_string}. Error: {str(e)}"
+        )
         logger.error(error_msg)
         raise RuntimeError(error_msg) from e
+
 
 # Signal handling for graceful shutdown (optional, can be used by calling code)
 def setup_signal_handlers():
     """
     Setup signal handlers to properly terminate daemon processes.
-    
+
     This function should be called once during application startup to ensure
     proper cleanup when the main process receives termination signals.
     """
+
     def signal_handler(signum, frame):
         # Terminate all running daemon processes
         with _process_lock:
             pids_to_terminate = [
-                pid for pid, info in _daemon_processes.items() 
-                if info.get('status') == 'running'
+                pid
+                for pid, info in _daemon_processes.items()
+                if info.get("status") == "running"
             ]
-        
+
         for pid in pids_to_terminate:
             try:
                 os.killpg(os.getpgid(pid), signal.SIGTERM)
             except Exception:
                 pass  # Process might have already terminated
-        
+
         # Exit the application
         exit(0)
-    
+
     # Register handlers for SIGINT and SIGTERM
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
+
 # Export functions to make them available as tools
 __all__ = [
-    'run_shell_command_daemon',
-    'list_daemon_processes', 
-    'terminate_daemon_process',
-    'check_daemon_status',
-    'run_shell_command',
-    'setup_signal_handlers'
+    "run_shell_command_daemon",
+    "list_daemon_processes",
+    "terminate_daemon_process",
+    "check_daemon_status",
+    "run_shell_command",
+    "setup_signal_handlers",
 ]

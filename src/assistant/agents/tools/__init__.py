@@ -4,8 +4,9 @@ Tools package for the assistant.
 This module exports all available tools that can be used by agents.
 """
 
-from .system_shell import run_shell_command
+# from .system_shell import run_shell_command
 from .system_shell_daemon import (
+    run_shell_command,
     run_shell_command_daemon,
     list_daemon_processes,
     terminate_daemon_process,
