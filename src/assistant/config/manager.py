@@ -89,7 +89,7 @@ class AssistantConfig:
 
         if self.global_only is False:
             env_config_file = os.environ.get(self.ENV_CONFIG_FILENAME)
-            if env_config_file and Path.exists(env_config_file):
+            if env_config_file and Path.exists(Path(env_config_file)):
                 return Path(env_config_file), self.HOME_CONFIG_DIR / self.CONFIG_FILENAME
             # Search from current directory to root
             current_path = Path.cwd()

@@ -1,6 +1,10 @@
 """External service integrations for agents."""
 
-from .github import create_github_pull_request
+from .github import (
+    create_github_pull_request,
+    close_github_pull_request,
+    list_github_pull_requests,
+)
 from .jira import (
     add_jira_comment,
     create_jira_issue,
@@ -23,6 +27,8 @@ class GithubAgent:
     """GitHub integration functions."""
 
     create_pull_request = staticmethod(create_github_pull_request)
+    close_pull_request = staticmethod(close_github_pull_request)
+    list_pull_requests = staticmethod(list_github_pull_requests)
 
 
 __all__ = [
@@ -33,4 +39,6 @@ __all__ = [
     "add_jira_comment",
     "create_jira_issue",
     "create_github_pull_request",
+    "close_github_pull_request",
+    "list_github_pull_requests",
 ]
