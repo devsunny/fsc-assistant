@@ -367,7 +367,7 @@ def execute_command_interactive(
 
 def execute_command_with_output(
     command: str,    
-    cwd: Optional[str] = Path.cwd(),
+    cwd: Optional[str] = None,
     env: Optional[dict] = os.environ.copy()   
 ) -> Tuple[int, str, str]:
     """
