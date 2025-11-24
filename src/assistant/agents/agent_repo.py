@@ -66,6 +66,8 @@ def _load_integration_tools() -> List[Any]:
             add_jira_comment,
             create_jira_issue,
             create_github_pull_request,
+            close_github_pull_request,
+            list_github_pull_requests,
         )
 
         _integration_tools_cache = [
@@ -74,6 +76,8 @@ def _load_integration_tools() -> List[Any]:
             add_jira_comment,
             create_jira_issue,
             create_github_pull_request,
+            close_github_pull_request,
+            list_github_pull_requests,
         ]
     return _integration_tools_cache
 
