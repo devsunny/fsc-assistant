@@ -39,9 +39,9 @@ class LLMChatHistoryManager:
         self.history_file_path = (
             Path(history_file_path)
             if history_file_path
-            else Path.home() / ".fsc-assistant" / ".llm_message_history"
+            else Path.cwd() / ".llm_message_history"
         )
-        logger.info("LLM History file:%s", self.history_file_path)
+        print("[INFO] LLM History file:", self.history_file_path)
         self.history: List[Dict[str, Any]] = []
         self._ensure_directory_exists()
         self.load_history()

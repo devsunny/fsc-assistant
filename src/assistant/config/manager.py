@@ -59,19 +59,21 @@ class AssistantConfig:
         file taking precedence.
         """
         self.config_file_path, self.global_config_path = self._find_config_files()
-                
+            
         self._initialize_default_config()
 
         if self.global_config_path and self.global_config_path.exists():
+            print(f"[INFO] Using global config file: {self.global_config_path}")
             with open(self.global_config_path, "rb") as f:
                 file_config = tomllib.load(f)
                 self._merge_config(file_config)
-
+                        
         if (
             self.global_only is False
             and self.config_file_path
             and self.config_file_path.exists()
         ):
+            print(f"[INFO] Using config file: {self.config_file_path}")
             with open(self.config_file_path, "rb") as f:
                 file_config = tomllib.load(f)
                 self._merge_config(file_config)
@@ -86,24 +88,19 @@ class AssistantConfig:
         config_file = None
 
         if self.global_only is False:
+            env_config_file = os.environ.get(self.ENV_CONFIG_FILENAME)
+            if env_config_file and Path.exists(env_config_file):
+                return Path(env_config_file), self.HOME_CONFIG_DIR / self.CONFIG_FILENAME
             # Search from current directory to root
             current_path = Path.cwd()
-            while current_path != current_path.parent:
+            while str(current_path) != Path.cwd().root:
+                # print(f"Searching for config in: {current_path}")
                 config_file = current_path / self.CONFIG_FILENAME
-                if config_file.exists():
-                    break
+                if config_file.exists():                    
+                    return config_file, self.HOME_CONFIG_DIR / self.CONFIG_FILENAME                    
                 current_path = current_path.parent
-
-        # Check user home directory
-        home_config = self.HOME_CONFIG_DIR / self.CONFIG_FILENAME
-        os.makedirs(self.HOME_CONFIG_DIR, exist_ok=True)
-        env_config_file = os.environ.get(self.ENV_CONFIG_FILENAME)
-        if env_config_file:
-            env_config_path = Path(env_config_file)
-            if env_config_path.exists():
-                return env_config_path, home_config
-        
-        return config_file, home_config
+                
+        return None, self.HOME_CONFIG_DIR / self.CONFIG_FILENAME
 
     def _merge_config(self, new_config: Dict[str, Any]) -> None:
         """

@@ -9,7 +9,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 
 import click
 from rich.console import Console
@@ -21,10 +21,12 @@ from assistant.utils.cli.console import CLIConsole
 from assistant.utils.cli.executor import execute_command_realtime_combined, execute_command_realtime_threaded, execute_command_with_output
 from assistant.utils.path import get_project_root
 
-from ..llm.agent_client import AgentOrchestrator
+# Defer heavy imports until needed
+if TYPE_CHECKING:
+    from ..llm.agent_client import AgentOrchestrator
+
 from . import shell_constants as const
 from . import shell_help
-from .agent_repo import load_tools
 
 from .utils.prompts import CODING_ASSISTANT_SYSTEM_PROMPT
 from .query_analyzer import analyze_user_intent, Intent
@@ -64,14 +66,40 @@ class AgenticShell:
         self.console = Console()
         self.config = config if config is not None else AssistantConfig()
         self.cliconsole = CLIConsole()
-        self.llm = AgentOrchestrator(
-            stream_handler=lambda x: print(x, end="", flush=True),
-            debug=os.environ.get("DEBUG", "False").lower() == "true",
-            config=self.config,
-        )
-        self.selected_model = self.llm.model
-        self.cached_tools = None
+        
+        # Defer heavy LLM initialization until first use
+        self._llm = None
+        self._selected_model = None
+        self._cached_tools = None
         self.last_command_output = None
+
+    @property
+    def llm(self) -> 'AgentOrchestrator':
+        """Lazy-loaded AgentOrchestrator instance."""
+        if self._llm is None:
+            from ..llm.agent_client import AgentOrchestrator
+            self._llm = AgentOrchestrator(
+                stream_handler=lambda x: print(x, end="", flush=True),
+                debug=os.environ.get("DEBUG", "False").lower() == "true",
+                config=self.config,
+            )
+            self._selected_model = self._llm.model
+        return self._llm
+
+    @property
+    def selected_model(self) -> str:
+        """Get the currently selected model."""
+        if self._selected_model is None:
+            # This will trigger llm initialization
+            _ = self.llm
+        return self._selected_model
+
+    @selected_model.setter
+    def selected_model(self, value: str) -> None:
+        """Set the selected model."""
+        self._selected_model = value
+        if self._llm is not None:
+            self._llm.model = value
 
     def switch_model(self, model_id: str) -> str:
         """
@@ -186,10 +214,11 @@ class AgenticShell:
         Returns:
             List of tool functions available for this request
         """
-        if self.cached_tools is None:
-            self.cached_tools = load_tools()
+        if self._cached_tools is None:
+            from .agent_repo import load_tools
+            self._cached_tools = load_tools()
 
-        return self.cached_tools
+        return self._cached_tools
 
     def refine_user_prompt(self, user_input: str) -> str:
         """
