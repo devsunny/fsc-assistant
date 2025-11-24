@@ -40,7 +40,7 @@ def _cleanup_terminated_processes():
             del _daemon_processes[pid]
 
 
-def run_shell_command_daemon(command_string: str, timeout: int = None) -> dict:
+def run_shell_command_daemon(command_string: str, timeout: int = 180) -> dict:
     """
     Runs a shell command in daemon mode (background process).
 
@@ -254,7 +254,7 @@ def is_frontend_dev_server(command: str) -> bool:
 def run_shell_command(
     command_string: str,
     interactive: bool = False,
-    timeout: int = None,
+    timeout: int = 180,
     daemon_mode: bool = False,
 ) -> str:
     """

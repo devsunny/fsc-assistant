@@ -14,6 +14,8 @@ import logging
 import re
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from assistant.utils.cli.console import get_cli_console
+
 
 # Light imports only - heavy dependencies loaded lazily
 logger = logging.getLogger(__name__)
@@ -165,10 +167,10 @@ class AgentOrchestrator:
         self._model = None
         self._chat_history = None
         self._tool_handler = None
-        
+        self.cliconsole = get_cli_console()
         # Flag to track if heavy components are loaded
         self._is_initialized = False
-        
+        self._response_model = None
         if self._debug:
             logger.setLevel(logging.DEBUG)
         else:
@@ -267,6 +269,10 @@ class AgentOrchestrator:
             return self._config.get_int("llm", "max_completion_tokens", 10*1024)
         return 10*1024
     
+    @property
+    def response_model(self) -> str:
+        """Get the model used in the last response."""
+        return self._response_model or "unknown"
     
     def _extend_history(
         self, 
@@ -378,7 +384,19 @@ class AgentOrchestrator:
         tool_args_json = ""
         is_tool_call = False
         
-        for chunk in response:
+        shown_model = None
+        
+        # Call LLM API
+        
+        for chunk in response:            
+            if getattr(chunk, "model", None) and self._stream_handler and shown_model is None:                
+                self.cliconsole.print(
+                    f"\n[Assistant - {chunk.model}]", color="green", end=" "
+                )
+                shown_model = chunk.model
+                self._response_model = chunk.model
+                
+                
             delta = chunk.choices[0].delta if chunk.choices else None
             if not delta:
                 continue
@@ -388,7 +406,9 @@ class AgentOrchestrator:
                 if self._stream_handler:
                     self._stream_handler(delta.content)
                 assistant_content += delta.content
-                
+            # print(delta)
+            
+                     
             # Tool call deltas
             tcs = getattr(delta, "tool_calls", None)
             if tcs:

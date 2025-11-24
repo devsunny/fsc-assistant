@@ -118,3 +118,14 @@ class CLIConsole:
         if ansicolor in COLORS:
             prompt = f"<{ansicolor}>{prompt}</{ansicolor}>"
         console_print(HTML(prompt), end=end)
+
+
+# Lazy loading singleton instance
+_cli_console_instance = None
+
+def get_cli_console() -> CLIConsole:
+    """Get the singleton instance of CLIConsole, creating it if needed."""
+    global _cli_console_instance
+    if _cli_console_instance is None:
+        _cli_console_instance = CLIConsole()
+    return _cli_console_instance

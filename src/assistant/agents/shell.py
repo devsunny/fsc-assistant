@@ -17,7 +17,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 
 from ..config.manager import AssistantConfig
-from assistant.utils.cli.console import CLIConsole
+from assistant.utils.cli.console import get_cli_console
 from assistant.utils.cli.executor import execute_command_realtime_combined, execute_command_realtime_threaded, execute_command_with_output
 from assistant.utils.path import get_project_root
 
@@ -65,21 +65,22 @@ class AgenticShell:
         """
         self.console = Console()
         self.config = config if config is not None else AssistantConfig()
-        self.cliconsole = CLIConsole()
+        self.cliconsole = get_cli_console()
         
         # Defer heavy LLM initialization until first use
         self._llm = None
         self._selected_model = None
         self._cached_tools = None
         self.last_command_output = None
-
+    
+    # lambda x: print(x, end="", flush=True),
     @property
     def llm(self) -> 'AgentOrchestrator':
         """Lazy-loaded AgentOrchestrator instance."""
         if self._llm is None:
             from ..llm.agent_client import AgentOrchestrator
             self._llm = AgentOrchestrator(
-                stream_handler=lambda x: print(x, end="", flush=True),
+                stream_handler= lambda x: print(x, end="", flush=True),
                 debug=os.environ.get("DEBUG", "False").lower() == "true",
                 config=self.config,
             )
@@ -333,7 +334,7 @@ class AgenticShell:
             
             # Capture both stdout and stderr for better analysis
             try:
-                status, stdout_output, stderr_output = execute_command_realtime_threaded(system_command)
+                status, stdout_output, stderr_output = execute_command_realtime_threaded(system_command, timeout=180)
                 
                 if status == 0:
                     self.cliconsole.print(f"Command executed successfully", color="green")
@@ -429,10 +430,7 @@ class AgenticShell:
                         break
                     continue
 
-                # Call LLM API
-                self.cliconsole.print(
-                    const.MSG_ASSISTANT_PREFIX, color="green", end=" "
-                )
+                
                 response = self.run_workflow(user_input)
 
                 if not response:
@@ -443,7 +441,7 @@ class AgenticShell:
                     continue
                 else:
                     self.console.print(
-                        Panel(Markdown(response), title="Agent Response")
+                        Panel(Markdown(response), title=f"Agent Response - Model: {self.llm.response_model}")
                     )
 
             except KeyboardInterrupt:
