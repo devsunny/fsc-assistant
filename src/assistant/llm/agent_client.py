@@ -15,6 +15,7 @@ import re
 from copy import deepcopy
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from assistant.utils.cli.console import get_cli_console
+from assistant.utils.json import CustomJsonEncoder
 
 
 # Light imports only - heavy dependencies loaded lazily
@@ -85,7 +86,7 @@ class ToolExecutionHandler:
         if isinstance(result, list):
             tool_messages[-1]["content"] = result
         else:
-            tool_messages[-1]["content"] = json.dumps(result)
+            tool_messages[-1]["content"] = json.dumps(result, cls=CustomJsonEncoder)
             
         print(f"\nTool {tool_name} execution completed:")
         return tool_messages
