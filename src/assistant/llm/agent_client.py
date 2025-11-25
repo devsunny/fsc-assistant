@@ -362,6 +362,7 @@ class AgentOrchestrator:
             reraise=True,
         )
         def _make_request():
+            
             return self._client.chat.completions.create(**params)
             
         return _make_request()
