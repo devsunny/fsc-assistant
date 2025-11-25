@@ -1,0 +1,73 @@
+{
+  "name": "fsc-assistant",
+  "version": "1.0.0",
+  "description": "AI-powered development assistant with LLM integration, file operations, web scraping, and DevOps tools",
+  "main": "dist/cli.js",
+  "bin": {
+    "fsc": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "test": "jest --verbose",
+    "test:unit": "jest __tests__/all-components.test.ts __tests__/mcp.test.ts __tests__/document_analysis.test.ts",
+    "test:integration": "jest __tests__/tool-functionality.test.ts __tests__/cli-validation.test.ts",
+    "test:performance": "jest __tests__/performance.test.ts",
+    "test:cross-platform": "jest __tests__/cross-platform.test.ts",
+    "clean": "rm -rf dist/",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "ai",
+    "assistant",
+    "llm",
+    "development",
+    "automation",
+    "devops",
+    "cli"
+  ],
+  "author": "FSC Assistant Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/fsc-assistant.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/fsc-assistant/issues"
+  },
+  "homepage": "https://github.com/your-org/fsc-assistant#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.0",
+    "axios": "^1.4.0",
+    "commander": "^10.0.0",
+    "node-fetch": "^3.3.2",
+    "openai": "^6.9.1",
+    "toml": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.3.1",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.1.3"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "CONFIGURATION.md",
+    "LICENSE"
+  ],
+  "jest": {
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.ts"
+    ],
+    "coverageDirectory": "coverage",
+    "testMatch": [
+      "<rootDir>/__tests__/**/*.(test|spec).ts"
+    ]
+  }
+}

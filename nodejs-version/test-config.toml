@@ -1,0 +1,11 @@
+[llm]
+provider = "openai"
+model = "gpt-4"
+api_key = "test-key"
+
+[jira]
+base_url = "https://example.atlassian.net"
+token = "jira-token"
+
+[github]
+token = "github-token"
