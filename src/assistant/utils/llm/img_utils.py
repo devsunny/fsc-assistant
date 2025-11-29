@@ -35,12 +35,19 @@ def _image_to_data_url(
             out_img.paste(img, mask=img.split()[-1])
         else:
             out_img = img.convert("RGB")
+    
     out_img.save(buf, format=fmt, **save_kwargs)
     data = buf.getvalue()
     mime = {
         "WEBP": "image/webp",
         "JPEG": "image/jpeg",
+        "JPG": "image/jpeg",
         "PNG": "image/png",
+        "GIF": "image/gif",
+        "BMP": "image/bmp",
+        "TIFF": "image/tiff",
+        "ICO": "image/x-icon",
+        "SVG": "image/svg+xml",
     }.get(fmt.upper(), f"image/{fmt.lower()}")
     b64 = base64.b64encode(data).decode("ascii")
     return f"data:{mime};base64,{b64}", len(data)
@@ -122,7 +129,10 @@ def _file_to_data_url_with_limit(image_path: str, max_bytes: int) -> str:
     with Image.open(image_path) as img:
         img = ImageOps.exif_transpose(img)  # respect EXIF orientation
         # Prefer WEBP for size efficiency; will fall back to JPEG if needed
-        return _downscale_and_compress_to_limit(img, max_bytes, preferred_fmt="WEBP")
+        fmt = Path(image_path).suffix.upper().lstrip(".")
+        if fmt == "JPG":
+            fmt = "JPEG"
+        return _downscale_and_compress_to_limit(img, max_bytes, preferred_fmt=fmt)
 
 
 def to_multipart_message_content(
