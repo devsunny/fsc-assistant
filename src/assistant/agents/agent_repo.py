@@ -47,10 +47,10 @@ def _load_core_tools() -> List[Any]:
             load_text_file_from_disk,
             save_binary_file_to_disk,
             load_image_files_from_disk,
-            change_working_directory,
+            change_working_directory,        
             fetch_webpage_content,
             capture_web_page_screenshot,
-            download_web_file_from_url,
+            download_web_file_from_url, 
             search_google_custom_api,
         ]
     return _core_tools_cache
